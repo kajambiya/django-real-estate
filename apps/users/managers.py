@@ -1,11 +1,12 @@
 from django.contrib.auth.base_user import BaseUserManager
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from django.utils.translation import gettext_lazy as _  
+from django.utils.translation import gettext_lazy as _ 
+import logging 
 
 class CustomUserManager(BaseUserManager):
 
-    def email_validateor(self, email):
+    def email_validator(self, email):
         try:
             validate_email(email)
         except:
@@ -22,7 +23,7 @@ class CustomUserManager(BaseUserManager):
             raise ValueError(_('Please provide last name')) 
 
         if email:
-            email = self.normalize_email
+            self.normalize_email(email=email)
             self.email_validator(email)
         else:
             raise ValueError(_('Base User Account: An email address is required!'))
@@ -43,6 +44,8 @@ class CustomUserManager(BaseUserManager):
         return user
 
     def create_superuser(self, username, firstname, lastname, password, email, **extrafields):
+        logger = logging.getLogger(__name__)
+        logger.info(f'Password is {password}')
         extrafields.setdefault('is_staff', True)
         extrafields.setdefault('is_superuser', True)
         extrafields.setdefault('is_active', True)
@@ -57,17 +60,19 @@ class CustomUserManager(BaseUserManager):
             raise ValueError(_('Please provide a password!'))
         
         if email:
-            email = self.normalize_email
+            email = self.normalize_email(email=email)
             self.email_validator(email)
         else:
-            raise ValueError(_('Base User Account: An email address is required!'))
+            raise ValueError(_('Admin Account: An email address is required!'))
 
-        user = self.model(
-            username = username,
-            firstname = firstname,
-            lastname = lastname,
-            email = email,
+        user = self.create_user(
+            username,
+            firstname,
+            lastname,
+            password,
+            email,
             **extrafields
         )
+        user.save(using=self._db)
 
         return user
