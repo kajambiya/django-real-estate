@@ -35,14 +35,15 @@ class Property(TimeStampedUUIDModel):
         COMMERCIAL = 'Commercial', _('Commercial')
         OTHER = 'Other', _('Other')
 
-    user = (models.ForeignKey(User,
-                              verbose_name=_('Agent, Seller or Buyer'),
-                              related_name='agent_buyer',
-                              on_delete=models.DO_NOTHING,
-                              ),
-            )
+    user = models.ForeignKey(
+        User,
+        verbose_name=_('Agent, Seller or Buyer'),
+        related_name='agent_buyer',
+        on_delete=models.DO_NOTHING,
+    )
+
     title = models.CharField(verbose_name=_('Property Title'), max_length=250)
-    slug = AutoSlugField(populate_from=title, unique=True, always_update=True)
+    slug = AutoSlugField(populate_from='title', unique=True, always_update=True)
     ref_code = models.CharField(
         verbose_name=_('Property Reference Code'),
         max_length=255,
@@ -55,13 +56,13 @@ class Property(TimeStampedUUIDModel):
     )
     country = CountryField(
         verbose_name=_('Country'),
-        default='KE',
+        default='UG',
         blank_label='Select Country',
     )
     city = models.CharField(
         verbose_name=_('City'),
         max_length=180,
-        default='Uganda',
+        default='Kampala',
     )
     postal_code = models.CharField(verbose_name=_('Postal Code'),
                                    max_length=100,
@@ -140,7 +141,7 @@ class Property(TimeStampedUUIDModel):
 
     def save(self, *args, **kwargs):
         self.title = str.title(self.title)
-        self.description = str.description(self.description)
+        self.description = str.capitalize(self.description)
         self.ref_code = ''.join(
             random.choices(string.ascii_uppercase + string.digits, k=10)
         )
@@ -151,9 +152,10 @@ class Property(TimeStampedUUIDModel):
         tax_percentage = self.tax
         property_price = self.price
         tax_amount = round(tax_percentage * property_price, 2)
-        price_after_tax = float(round(property_price + tax_amount), 2)
+        price_after_tax = float(round(property_price + tax_amount, 2))
 
         return price_after_tax
+
 
 class PropertyViews(models.Model):
     ip = models.CharField(verbose_name=_('IP Address'),
@@ -163,12 +165,10 @@ class PropertyViews(models.Model):
                                  on_delete=models.CASCADE)
 
     def __str__(self):
-        return(
+        return (
             f'Total views on - {self.property.title} is {self.property.views} view(s)'
         )
 
     class Meta:
         verbose_name = 'Total Property Views'
         verbose_name_plural = 'Total Property Views'
-
-
